@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: roadlife_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-roadlife_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-roadlife_password}
+      POSTGRES_DB: ${POSTGRES_DB:-roadlife_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - roadlife-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: roadlife_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-roadlife_user}:${POSTGRES_PASSWORD:-roadlife_password}@postgres:5432/${POSTGRES_DB:-roadlife_db}
+      - ML_SERVICE_URL=http://ml-service:8001
+    depends_on:
+      - postgres
+    networks:
+      - roadlife-net
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: roadlife_ml_service
+    ports:
+      - "8001:8001"
+    networks:
+      - roadlife-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: roadlife_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - roadlife-net
+
+volumes:
+  postgres_data:
+
+networks:
+  roadlife-net:
+    driver: bridge

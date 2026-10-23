@@ -1,0 +1,1 @@
+class DamageDetector: pass

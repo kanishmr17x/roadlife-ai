@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Python virtual environments & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+*.egg-info/
+.eggs/
+
+# Build & distribution outputs
+dist/
+build/
+out/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing & coverage
+coverage/
+.pytest_cache/
+.nyc_output/
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ML model weights and local datasets
+*.pt
+*.pth
+*.bin
+*.onnx
+*.weights
+!**/weights/.gitkeep
+!**/datasets/**/.gitkeep

@@ -1,0 +1,13 @@
+{
+  "name": "roadlife-ai-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-Driven GPS-Based Road Lifecycle, Construction Material Visual Verification, Road Damage Detection, Smart Repair Planning and Contractor Performance Management System",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build"
+  }
+}

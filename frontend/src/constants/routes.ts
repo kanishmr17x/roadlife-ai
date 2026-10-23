@@ -1,0 +1,51 @@
+export const ROUTES = {
+  LOGIN: '/login',
+  REGISTER: '/register',
+  UNAUTHORIZED: '/unauthorized',
+  
+  CITIZEN: {
+    DASHBOARD: '/citizen/dashboard',
+    REPORT: '/citizen/report',
+    MY_REPORTS: '/citizen/reports',
+    REPORT_DETAILS: (id: string) => `/citizen/reports/${id}`,
+    NOTIFICATIONS: '/citizen/notifications',
+    PROFILE: '/citizen/profile',
+  },
+  
+  CONTRACTOR: {
+    DASHBOARD: '/contractor/dashboard',
+    ROADS: '/contractor/roads',
+    ROAD_DETAILS: (id: string) => `/contractor/roads/${id}`,
+    CONSTRUCTION_EVIDENCE: '/contractor/evidence',
+    MATERIAL_CAPTURE: '/contractor/material/capture',
+    MATERIAL_VERIFICATION: '/contractor/material/verification',
+    COMPLAINTS: '/contractor/complaints',
+    COMPLAINT_DETAILS: (id: string) => `/contractor/complaints/${id}`,
+    REPAIR_TASKS: '/contractor/repair-tasks',
+    REPAIR_PLANNING: '/contractor/repair-planning',
+    WEATHER_SCHEDULE: '/contractor/weather-schedule',
+    COMPLETION_EVIDENCE: '/contractor/completion-evidence',
+    PERFORMANCE: '/contractor/performance',
+    NOTIFICATIONS: '/contractor/notifications',
+    PROFILE: '/contractor/profile',
+  },
+
+  GOVERNMENT: {
+    DASHBOARD: '/government/dashboard',
+    ROADS: '/government/roads',
+    CREATE_ROAD: '/government/roads/create',
+    ROAD_MAP: '/government/roads/map',
+    ROAD_DETAILS: (id: string) => `/government/roads/${id}`,
+    CONSTRUCTION_MONITORING: '/government/construction-monitoring',
+    MATERIAL_REVIEW: '/government/material-review',
+    COMPLAINT_MANAGEMENT: '/government/complaints',
+    REPAIR_MONITORING: '/government/repair-monitoring',
+    CONTRACTORS: '/government/contractors',
+    CONTRACTOR_DETAILS: (id: string) => `/government/contractors/${id}`,
+    CONTRACTOR_PERFORMANCE: '/government/contractor-performance',
+    ANALYTICS: '/government/analytics',
+    NOTIFICATIONS: '/government/notifications',
+    AUDIT_LOGS: '/government/audit-logs',
+    SETTINGS: '/government/settings',
+  }
+};

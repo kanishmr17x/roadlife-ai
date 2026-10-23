@@ -1,0 +1,15 @@
+export const ENDPOINTS = {
+  AUTH: { LOGIN: '/auth/login', REGISTER: '/auth/register', ME: '/auth/me' },
+  ROADS: '/roads',
+  CONSTRUCTION: '/construction',
+  MATERIALS: '/materials',
+  REPORTS: '/reports',
+  DAMAGE: '/damage',
+  REPAIRS: '/repairs',
+  WEATHER: '/weather',
+  CONTRACTORS: '/contractors',
+  PERFORMANCE: '/performance',
+  NOTIFICATIONS: '/notifications',
+  ANALYTICS: '/analytics',
+  AUDIT_LOGS: '/audit-logs',
+};
