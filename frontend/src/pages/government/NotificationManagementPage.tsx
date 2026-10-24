@@ -1,9 +1,24 @@
 import React from 'react';
+import { PortalModuleView } from '../../components/layout/PortalModuleView';
+import { Card } from '../../components/common/Card';
+import { Bell } from 'lucide-react';
+
 export default function NotificationManagementPage() {
   return (
-    <div className="p-6 bg-slate-800/50 rounded border border-slate-700">
-      <h2 className="text-xl font-bold text-sky-400">NotificationManagementPage</h2>
-      <p className="text-slate-400 text-sm mt-1">Placeholder page file for NotificationManagementPage.</p>
-    </div>
+    <PortalModuleView
+      portal="Government"
+      title="Public Advisory & Notification Broadcasts"
+      description="Issue road closure bulletins, monsoon pothole repair drives, and emergency transit advisories."
+    >
+      <Card className="p-5 space-y-3 max-w-xl bg-[#FFFEFA] border border-[#D8D7CE] shadow-sm">
+        <h3 className="font-serif text-base font-semibold text-[#252A24] flex items-center gap-2">
+          <Bell className="w-4 h-4 text-[#355844]" />
+          Broadcast Municipal Advisory
+        </h3>
+        <p className="text-xs text-[#6F726A] leading-relaxed">
+          Push real-time notifications to registered citizens and mobile field crews situated within designated spatial GIS coordinates.
+        </p>
+      </Card>
+    </PortalModuleView>
   );
 }

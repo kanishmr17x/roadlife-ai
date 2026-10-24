@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { PortalModuleView } from '../../components/layout/PortalModuleView';
+import { DamageReportsList } from '../../components/damage/DamageReportsList';
+import { DamageDetailsModal } from '../../components/repair/DamageDetailsModal';
+import { DamageRecord } from '../../types/damage';
+import { damageService } from '../../services/damage/damageService';
+
 export default function ComplaintManagementPage() {
+  const [damages, setDamages] = useState<DamageRecord[]>([]);
+  const [selectedDamage, setSelectedDamage] = useState<DamageRecord | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const res = await damageService.getAllDamages();
+      setDamages(res.data);
+    }
+    load();
+  }, []);
+
   return (
-    <div className="p-6 bg-slate-800/50 rounded border border-slate-700">
-      <h2 className="text-xl font-bold text-sky-400">ComplaintManagementPage</h2>
-      <p className="text-slate-400 text-sm mt-1">Placeholder page file for ComplaintManagementPage.</p>
-    </div>
+    <PortalModuleView
+      portal="Government"
+      title="Public Grievance & Distress Triage Management"
+      description="Review citizen road defect submissions, approve work order dispatches, and audit resolution SLAs."
+    >
+      <DamageReportsList
+        damages={damages}
+        onSelectDamage={(d) => setSelectedDamage(d)}
+      />
+      <DamageDetailsModal
+        isOpen={Boolean(selectedDamage)}
+        damage={selectedDamage}
+        onClose={() => setSelectedDamage(null)}
+      />
+    </PortalModuleView>
   );
 }

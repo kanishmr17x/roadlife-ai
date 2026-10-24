@@ -1,9 +1,40 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../constants/routes';
+import { MainLayout } from '../../layouts/MainLayout';
+import { DamageReportForm } from '../../components/forms/DamageReportForm';
+import { Button } from '../../components/common/Button';
+import { ArrowLeft } from 'lucide-react';
+
 export default function ReportDamagePage() {
+  const navigate = useNavigate();
+
   return (
-    <div className="p-6 bg-slate-800/50 rounded border border-slate-700">
-      <h2 className="text-xl font-bold text-sky-400">ReportDamagePage</h2>
-      <p className="text-slate-400 text-sm mt-1">Placeholder page file for ReportDamagePage.</p>
-    </div>
+    <MainLayout>
+      <div className="space-y-4 max-w-3xl mx-auto">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}
+          >
+            Return
+          </Button>
+          <div>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[#78846A]">
+              CIVIC OBSERVATION LOG
+            </span>
+            <h1 className="text-xl font-bold text-[#252A24] font-serif">
+              Report Road Defect & Pavement Distress
+            </h1>
+          </div>
+        </div>
+
+        <DamageReportForm
+          onCancel={() => navigate(ROUTES.CITIZEN.DASHBOARD)}
+        />
+      </div>
+    </MainLayout>
   );
 }

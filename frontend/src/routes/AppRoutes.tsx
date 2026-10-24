@@ -49,7 +49,8 @@ import GovernmentSettingsPage from '../pages/government/GovernmentSettingsPage';
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
+      <Route path="/" element={<Navigate to={ROUTES.CITIZEN.DASHBOARD} replace />} />
+      <Route path="/dashboard" element={<Navigate to={ROUTES.CITIZEN.DASHBOARD} replace />} />
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
       <Route path={ROUTES.UNAUTHORIZED} element={<UnauthorizedPage />} />
