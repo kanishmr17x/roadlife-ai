@@ -28,13 +28,13 @@ export default function CitizenProfilePage() {
         <div className="bg-[#FFFEFA] border border-[#D8D7CE] rounded-md p-5 sm:p-6 space-y-5 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded bg-[#EDF3EE] border border-[#C6D8CC] flex items-center justify-center text-[#355844] font-serif font-bold text-xl">
-              {user?.fullName.charAt(0) || 'P'}
+              {user?.fullName ? user.fullName.charAt(0) : 'O'}
             </div>
             <div className="space-y-0.5">
-              <h3 className="text-base font-bold text-[#252A24]">{user?.fullName || 'Priya Sharma'}</h3>
+              <h3 className="text-base font-bold text-[#252A24]">{user?.fullName || 'Field Observer'}</h3>
               <p className="text-xs text-[#6F726A] flex items-center gap-1.5 font-mono">
                 <Mail className="w-3.5 h-3.5 text-[#78846A]" />
-                {user?.email || 'citizen@roadsense.local'}
+                {user?.email || 'observer@roadsense.local'}
               </p>
               <div className="pt-1">
                 <Badge variant="status" status="VERIFIED">

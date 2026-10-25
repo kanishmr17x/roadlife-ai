@@ -1,87 +1,85 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types/user';
-import { UserRole } from '../constants/roles';
+import { authService } from '../services/auth/authService';
 
 interface AuthContextType {
   user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const DEFAULT_DEMO_USER: User = {
-  id: 'usr-demo-citizen',
-  email: 'citizen@roadsense.local',
-  fullName: 'Priya Sharma (Citizen Inspector)',
-  role: UserRole.CITIZEN,
-};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem('roadsense_user');
-      if (stored) return JSON.parse(stored);
+      const token = localStorage.getItem('token');
+      if (stored && token) {
+        return JSON.parse(stored);
+      }
     } catch {
-      // Fallback
+      // Ignored
     }
-    return DEFAULT_DEMO_USER;
+    return null;
   });
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('roadsense_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('roadsense_user');
-    }
-  }, [user]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('token', token);
-    setUser(userData);
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('roadsense_user');
     setUser(null);
-  };
+    authService.logout().catch(() => {});
+  }, []);
 
-  const switchRole = (role: UserRole) => {
-    const roleProfiles: Record<UserRole, User> = {
-      [UserRole.CITIZEN]: {
-        id: 'usr-demo-citizen',
-        email: 'citizen@roadsense.local',
-        fullName: 'Priya Sharma (Citizen Inspector)',
-        role: UserRole.CITIZEN,
-      },
-      [UserRole.CONTRACTOR]: {
-        id: 'usr-demo-contractor',
-        email: 'contractor@buildinfra.in',
-        fullName: 'Vikram Patel (BuildInfra EPC)',
-        role: UserRole.CONTRACTOR,
-      },
-      [UserRole.GOVERNMENT]: {
-        id: 'usr-demo-gov',
-        email: 'officer@pwd.gov.in',
-        fullName: 'Dr. Suresh Kumar (Executive Engineer)',
-        role: UserRole.GOVERNMENT,
-      },
-      [UserRole.ADMIN]: {
-        id: 'usr-demo-admin',
-        email: 'admin@roadsense.local',
-        fullName: 'System Administrator',
-        role: UserRole.ADMIN,
-      },
+  const login = useCallback((token: string, userData: User) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('roadsense_user', JSON.stringify(userData));
+    setUser(userData);
+  }, []);
+
+  // Validate session against server on startup
+  useEffect(() => {
+    let isMounted = true;
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    authService
+      .getMe()
+      .then((serverUser) => {
+        if (isMounted) {
+          setUser(serverUser);
+          localStorage.setItem('roadsense_user', JSON.stringify(serverUser));
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          // Token is expired or invalid - clear session
+          localStorage.removeItem('token');
+          localStorage.removeItem('roadsense_user');
+          setUser(null);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
     };
+  }, []);
 
-    const targetUser = roleProfiles[role] || DEFAULT_DEMO_USER;
-    setUser(targetUser);
-  };
+  const isAuthenticated = Boolean(user && localStorage.getItem('token'));
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

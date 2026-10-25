@@ -13,6 +13,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Authentication routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
+// Role-protected resource routes
+const resourceRoutes = require('./routes/resourceRoutes');
+app.use('/api', resourceRoutes);
+
 // 404 handler for unknown routes
 app.use((req, res, next) => {
   res.status(404).json({ error: 'Not found' });
