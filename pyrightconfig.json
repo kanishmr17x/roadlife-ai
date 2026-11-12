@@ -1,8 +1,8 @@
 {
-  "venvPath": ".",
+  "venvPath": "backend/ai-service",
   "venv": ".venv",
   "extraPaths": [
-    "backend",
-    "ml-service"
+    "backend/ai-service",
+    "ml"
   ]
 }
