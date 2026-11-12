@@ -1,67 +1,15 @@
-# GSD Methodology — Mission Control Rules
+# RoadLife AI — Agent Guidelines & Architecture Rules
 
-> **Get Shit Done**: A spec-driven, context-engineered development methodology.
-> 
-> These rules enforce disciplined, high-quality autonomous development.
+## System Overview
 
----
+RoadLife AI is a modular intelligent civil infrastructure management platform:
+- **Express Backend** (`backend/express-api/`): Port 5000, Mongoose MongoDB Atlas with resilient in-memory fallback, JWT auth, RBAC (Citizen, Contractor, Municipal Authority).
+- **FastAPI AI Microservice** (`backend/ai-service/`): Port 8001, Ultralytics YOLOv8 object detection, OpenCV edge/cavity tracing, MoRTH/IRC material assessor.
+- **React Frontend** (`frontend/`): Port 5173, React 18, Vite 5, TypeScript 5, Tailwind CSS, Leaflet GIS.
 
-## Canonical Rules
+## Core Rules
 
-**All canonical rules are in [PROJECT_RULES.md](../PROJECT_RULES.md).**
-
-This file provides Gemini-specific integration. For the complete methodology, see PROJECT_RULES.md.
-
----
-
-## Core Principles
-
-1. **Plan Before You Build** — No code without specification
-2. **State Is Sacred** — Every action updates persistent memory
-3. **Context Is Limited** — Prevent degradation through hygiene
-4. **Verify Empirically** — No "trust me, it works"
-
----
-
-## Quick Reference
-
-```
-Before coding    → Check SPEC.md is FINALIZED
-Before file read → Search first, then targeted read
-After each task  → Update STATE.md
-After 3 failures → State dump + fresh session
-Before "Done"    → Empirical proof captured
-```
-
----
-
-## Workflow Integration
-
-These rules integrate with the GSD workflows:
-
-| Workflow | Rules Enforced |
-|----------|----------------|
-| `/map` | Updates ARCHITECTURE.md, STACK.md |
-| `/plan` | Enforces Planning Lock, creates ROADMAP |
-| `/execute` | Enforces State Persistence after each task |
-| `/verify` | Enforces Empirical Validation |
-| `/pause` | Triggers Context Hygiene state dump |
-| `/resume` | Loads state from STATE.md |
-
----
-
-## Gemini-Specific Tips
-
-For Gemini-specific enhancements, see [adapters/GEMINI.md](../adapters/GEMINI.md).
-
-Key recommendations:
-- **Flash** for quick iterations and simple edits
-- **Pro** for complex planning and analysis
-- Large context is available but **search-first** still applies
-
----
-
-*GSD Methodology adapted for Google Antigravity*
-*Canonical rules: [PROJECT_RULES.md](../PROJECT_RULES.md)*
-*Source: https://github.com/glittercowboy/get-shit-done*
-
+1. **Keep Database Resilient**: The Express backend must gracefully operate in in-memory fallback mode if `MONGO_URI` is unset.
+2. **Keep Tests Passing**: Monorepo tests (`npm test` and `pytest backend/ai-service/tests`) must remain 100% green without requiring live external network access.
+3. **No Breaking Changes**: Never delete or rename active application components, routes, or services without verifying all dependents.
+4. **Clean Commits**: Keep Git history atomic and avoid committing `.env` files, logs, or large model weight files (`.pt`).
