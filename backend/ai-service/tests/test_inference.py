@@ -218,86 +218,93 @@ def test_api_detailed_health():
     assert "iou_threshold" in details
 
 
+def _run_coro(coro):
+    """Step an async coroutine synchronously without requiring OS event loop sockets."""
+    try:
+        while True:
+            coro.send(None)
+    except StopIteration as stop:
+        return stop.value
+
+
 def test_api_predict_damage_missing_model_returns_503():
     """Verify predict endpoint raises 503 when model weights are not loaded."""
-    import asyncio
     import app.main as main_module
     original_detector = main_module.detector
 
-    async def _run():
-        try:
-            mock_unready = MagicMock()
-            mock_unready.is_ready.return_value = False
-            main_module.detector = mock_unready
+    try:
+        mock_unready = MagicMock()
+        mock_unready.is_ready.return_value = False
+        main_module.detector = mock_unready
 
-            scope = {
-                "type": "http",
-                "method": "POST",
-                "path": "/predict/damage",
-                "headers": [],
-            }
-            request = Request(scope)
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/predict/damage",
+            "headers": [],
+        }
+        request = Request(scope)
 
-            with pytest.raises(HTTPException) as exc_info:
-                await detect_damage(request)
+        with pytest.raises(HTTPException) as exc_info:
+            _run_coro(detect_damage(request))
 
-            assert exc_info.value.status_code == 503
-            assert "not deployed" in exc_info.value.detail
-        finally:
-            main_module.detector = original_detector
-
-    asyncio.run(_run())
+        assert exc_info.value.status_code == 503
+        assert "not deployed" in exc_info.value.detail
+    finally:
+        main_module.detector = original_detector
 
 
 def test_api_predict_damage_with_valid_mock_inference():
     """Verify predict endpoint processes image bytes and returns DamageInferenceResponse."""
-    import asyncio
     import app.main as main_module
     original_detector = main_module.detector
 
-    async def _run():
-        try:
-            mock_detector = MagicMock()
-            mock_detector.is_ready.return_value = True
+    try:
+        mock_detector = MagicMock()
+        mock_detector.is_ready.return_value = True
 
-            expected_response = DamageInferenceResponse(
-                status="success",
-                model_name="test_model.pt",
-                device_used="cpu",
-                inference_time_ms=15.2,
-                image_width=100,
-                image_height=100,
-                total_detections=0,
-                detections=[],
-            )
-            mock_detector.predict.return_value = expected_response
-            main_module.detector = mock_detector
+        expected_response = DamageInferenceResponse(
+            status="success",
+            model_name="test_model.pt",
+            device_used="cpu",
+            inference_time_ms=15.2,
+            image_width=100,
+            image_height=100,
+            total_detections=0,
+            detections=[],
+        )
+        mock_detector.predict.return_value = expected_response
+        main_module.detector = mock_detector
 
-            dummy = np.zeros((100, 100, 3), dtype=np.uint8)
-            _, encoded = cv2.imencode(".jpg", dummy)
-            img_bytes = encoded.tobytes()
+        dummy = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, encoded = cv2.imencode(".jpg", dummy)
+        img_bytes = encoded.tobytes()
 
-            async def mock_receive():
+        received = False
+
+        async def mock_receive():
+            nonlocal received
+            if not received:
+                received = True
                 return {"type": "http.request", "body": img_bytes, "more_body": False}
+            return {"type": "http.request", "body": b"", "more_body": False}
 
-            scope = {
-                "type": "http",
-                "method": "POST",
-                "path": "/predict/damage",
-                "headers": [
-                    (b"content-type", b"image/jpeg"),
-                    (b"content-length", str(len(img_bytes)).encode("latin-1")),
-                ],
-            }
-            request = Request(scope, receive=mock_receive)
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/predict/damage",
+            "headers": [
+                (b"content-type", b"image/jpeg"),
+                (b"content-length", str(len(img_bytes)).encode("latin-1")),
+            ],
+        }
+        request = Request(scope, receive=mock_receive)
 
-            res = await detect_damage(request)
-            assert res.status == "success"
-            assert res.total_detections == 0
-            assert res.image_width == 100
-            assert res.image_height == 100
-        finally:
-            main_module.detector = original_detector
-
-    asyncio.run(_run())
+        res = _run_coro(detect_damage(request))
+        assert res.status == "success"
+        assert res.total_detections == 0
+        assert res.image_width == 100
+        assert res.image_height == 100
+    finally:
+        main_module.detector = original_detector
 
