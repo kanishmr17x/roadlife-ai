@@ -217,4 +217,57 @@ router.post('/', async (req, res) => {
   return res.status(201).json(formatDamageRecord(memoryRecord));
 });
 
+/**
+ * POST /api/damages/ai-detect
+ * Proxy and fallback handler for AI damage inference microservice
+ */
+router.post('/ai-detect', async (req, res) => {
+  const mlServiceUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8001';
+  const { imageBase64, imageUrl } = req.body || {};
+
+  if (!imageBase64 && !imageUrl) {
+    return res.status(400).json({
+      error: 'Either imageBase64 or imageUrl is required for AI damage detection.'
+    });
+  }
+
+  let buffer;
+  if (imageBase64) {
+    try {
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      buffer = Buffer.from(cleanBase64, 'base64');
+    } catch {
+      return res.status(400).json({ error: 'Invalid base64-encoded image string.' });
+    }
+  }
+
+  if (buffer) {
+    try {
+      const mlResponse = await fetch(`${mlServiceUrl}/predict/damage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'image/jpeg',
+          'Content-Length': String(buffer.length)
+        },
+        body: buffer,
+        signal: AbortSignal.timeout(3000)
+      });
+
+      const data = await mlResponse.json();
+      return res.status(mlResponse.status).json(data);
+    } catch (mlErr) {
+      // Return degraded fallback when ML service is offline or unreachable
+      return res.status(200).json({
+        status: 'degraded',
+        aiServiceAvailable: false,
+        message: 'Computer Vision microservice currently offline; heuristic damage estimation applied.',
+        total_detections: 0,
+        detections: []
+      });
+    }
+  }
+
+  return res.status(400).json({ error: 'Unable to process image for AI inference.' });
+});
+
 module.exports = router;

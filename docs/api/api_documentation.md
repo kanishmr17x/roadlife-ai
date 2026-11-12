@@ -82,7 +82,64 @@
 * **`POST /api/auth/logout`**
   - **Response (200 OK)**: `{ "message": "Session closed successfully" }`
 
-### 1.3 Role-Protected Resource Endpoints
+### 1.3 Damage Reporting & Geospatial Query Endpoints (`/api/damages` & `/api/damage`)
+* **`GET /api/damages`**
+  - **Description**: Returns all registered damage reports (sorted newest first, up to 100 items).
+  - **Response (200 OK)**: Array of `DamageRecord` objects conforming to the frontend schema.
+
+* **`POST /api/damages`**
+  - **Description**: Creates and persists a new road damage report (to MongoDB with in-memory fallback).
+  - **Request Body**:
+    ```json
+    {
+      "title": "Severe pothole near Ring Road Flyover",
+      "description": "Deep depression causing vehicle lane swerving",
+      "damageType": "pothole",
+      "severity": "HIGH",
+      "location": {
+        "type": "Point",
+        "coordinates": [77.5946, 12.9716]
+      },
+      "address": "Outer Ring Road, Bengaluru",
+      "roadName": "ORR Southbound Lane 2"
+    }
+    ```
+  - **Response (201 Created)**: Created `DamageRecord` document with assigned unique identifier.
+
+* **`GET /api/damages/:id`**
+  - **Description**: Retrieves a single damage report by its unique ID.
+  - **Response (200 OK)**: `DamageRecord` object.
+  - **Error (404 Not Found)**: When the ID does not match any report.
+
+* **`GET /api/damages/nearby`**
+  - **Description**: Geospatial proximity query utilizing MongoDB `2dsphere` spatial indexing.
+  - **Query Parameters**:
+    - `lng` (float, required): Longitude (-180..180).
+    - `lat` (float, required): Latitude (-90..90).
+    - `maxDistance` (float, optional): Maximum radius in meters (default: 5000).
+  - **Response (200 OK)**: Array of matching damage records ordered by proximity.
+
+* **`POST /api/damages/ai-detect`**
+  - **Description**: Image inference bridge to the FastAPI computer vision microservice (`:8001/predict/damage`).
+  - **Request Body**:
+    ```json
+    {
+      "imageBase64": "data:image/jpeg;base64,..."
+    }
+    ```
+  - **Response (200 OK - Microservice Online)**: YOLOv8 detections array with bounding boxes, confidence, and estimated severity.
+  - **Response (200 OK - Microservice Offline)**: Graceful fallback response:
+    ```json
+    {
+      "status": "degraded",
+      "aiServiceAvailable": false,
+      "message": "Computer Vision microservice currently offline; heuristic damage estimation applied.",
+      "total_detections": 0,
+      "detections": []
+    }
+    ```
+
+### 1.4 Role-Protected Resource Endpoints
 * **`GET /api/citizen/reports`**
   - **Access**: `CITIZEN`, `MUNICIPAL_AUTHORITY`, `ADMIN`
 * **`GET /api/contractor/projects`**

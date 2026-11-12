@@ -20,6 +20,7 @@ app.use('/api/auth', authRoutes);
 // Damage reporting routes (CRUD & Geospatial proximity)
 const damageRoutes = require('./routes/damageRoutes');
 app.use('/api/damages', damageRoutes);
+app.use('/api/damage', damageRoutes);
 
 // Role-protected resource routes
 const resourceRoutes = require('./routes/resourceRoutes');

@@ -134,4 +134,27 @@ describe('Damage Reporting & Geospatial API (/api/damages)', () => {
     const res = await makeRequest(app, { url: '/api/damages/nearby', method: 'GET' });
     assert.strictEqual(res.status, 400);
   });
+
+  test('8. POST /api/damages/ai-detect rejects missing image payload with 400', async () => {
+    const res = await makeRequest(app, {
+      url: '/api/damages/ai-detect',
+      method: 'POST',
+      body: {}
+    });
+    assert.strictEqual(res.status, 400);
+    assert.ok(res.body.error);
+  });
+
+  test('9. POST /api/damages/ai-detect gracefully falls back when ML service is offline', async () => {
+    const res = await makeRequest(app, {
+      url: '/api/damages/ai-detect',
+      method: 'POST',
+      body: {
+        imageBase64: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/'
+      }
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.status, 'degraded');
+    assert.strictEqual(res.body.aiServiceAvailable, false);
+  });
 });

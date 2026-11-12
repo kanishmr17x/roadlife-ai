@@ -192,6 +192,33 @@ export const damageService = {
   },
 
   /**
+   * Request automated AI damage inference on an uploaded image base64
+   */
+  async detectDamageAI(imageBase64: string): Promise<{
+    status: string;
+    aiServiceAvailable: boolean;
+    detections: Array<{
+      class_name: string;
+      confidence: number;
+      severity: string;
+      bbox: { x_min: number; y_min: number; x_max: number; y_max: number };
+    }>;
+    message?: string;
+  }> {
+    try {
+      const response = await apiClient.post('/damages/ai-detect', { imageBase64 });
+      return response.data;
+    } catch {
+      return {
+        status: 'offline',
+        aiServiceAvailable: false,
+        detections: [],
+        message: 'AI computer vision service could not be reached.',
+      };
+    }
+  },
+
+  /**
    * Reset local storage to initial demo state
    */
   resetToDemo(): void {
