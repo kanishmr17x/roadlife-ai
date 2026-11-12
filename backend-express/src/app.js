@@ -29,7 +29,13 @@ app.use((req, res, next) => {
 // Generic 500 error handler (does not expose stack traces or secrets)
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  res.status(500).json({ error: 'Internal server error' });
+  const status = err.statusCode || err.status || 500;
+  if (status >= 500) {
+    console.error('[Server Error]', err);
+    res.status(500).json({ error: 'Internal server error' });
+  } else {
+    res.status(status).json({ error: err.message || 'Bad request' });
+  }
 });
 
 module.exports = app;

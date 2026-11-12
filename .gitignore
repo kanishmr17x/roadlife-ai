@@ -50,7 +50,7 @@ Thumbs.db
 *.sln
 *.sw?
 
-# ML model weights and local datasets
+# ML model weights, training runs, and local datasets
 *.pt
 *.pth
 *.bin
@@ -58,3 +58,11 @@ Thumbs.db
 *.weights
 !**/weights/.gitkeep
 !**/datasets/**/.gitkeep
+runs/
+**/runs/
+ml-service/datasets/**/images/
+ml-service/datasets/**/labels/
+ml-service/datasets/**/*.zip
+ml-service/datasets/**/*.tar.gz
+ml-service/datasets/**/*.tar
+
