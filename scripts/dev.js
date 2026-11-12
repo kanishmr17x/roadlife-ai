@@ -37,7 +37,7 @@ function runService(name, cwd, script, color) {
   return child;
 }
 
-const backend = runService('Backend ', 'backend-express', 'dev', '\x1b[36m');
+const backend = runService('Backend ', path.join('backend', 'express-api'), 'dev', '\x1b[36m');
 const frontend = runService('Frontend', 'frontend', 'dev', '\x1b[35m');
 
 function cleanup() {

@@ -1,60 +1,67 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgis/postgis:15-3.3
-    container_name: roadlife_postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-roadlife_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-roadlife_password}
-      POSTGRES_DB: ${POSTGRES_DB:-roadlife_db}
+  mongodb:
+    image: mongo:7.0
+    container_name: roadlife_mongodb
+    restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: roadlife_db
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - mongodb_data:/data/db
     networks:
       - roadlife-net
 
-  backend:
+  express-api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: roadlife_backend
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.express
+    container_name: roadlife_express_backend
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "5000:5000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-roadlife_user}:${POSTGRES_PASSWORD:-roadlife_password}@postgres:5432/${POSTGRES_DB:-roadlife_db}
-      - ML_SERVICE_URL=http://ml-service:8001
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/roadlife_db
+      - JWT_SECRET=${JWT_SECRET:-roadlife-ai-development-secret-jwt-key-2026}
+      - ML_SERVICE_URL=http://ai-service:8001
     depends_on:
-      - postgres
+      - mongodb
     networks:
       - roadlife-net
 
-  ml-service:
+  ai-service:
     build:
-      context: ./ml-service
-      dockerfile: Dockerfile
-    container_name: roadlife_ml_service
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.ml
+    container_name: roadlife_ai_service
+    restart: unless-stopped
     ports:
       - "8001:8001"
+    environment:
+      - PORT=8001
+      - YOLO_OFFLINE=1
     networks:
       - roadlife-net
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../docker/Dockerfile.frontend
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.frontend
     container_name: roadlife_frontend
+    restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "5173:80"
     depends_on:
-      - backend
+      - express-api
     networks:
       - roadlife-net
 
 volumes:
-  postgres_data:
+  mongodb_data:
 
 networks:
   roadlife-net:
