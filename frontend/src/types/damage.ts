@@ -66,4 +66,5 @@ export interface CreateDamageInput {
   address?: string;
   roadName?: string;
   photoUrl?: string;
+  repairEstimate?: DamageRepairEstimate;
 }

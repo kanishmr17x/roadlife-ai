@@ -1,14 +1,17 @@
 const express = require('express');
+const mongoose = require('mongoose');
 
 const app = express();
 
 app.use(express.json());
 
-// Health check endpoint
+// Health check endpoint reporting service and database status
 app.get('/api/health', (req, res) => {
+  const isDbConnected = mongoose.connection && mongoose.connection.readyState === 1;
   res.status(200).json({
     status: 'ok',
     service: 'roadsense-backend',
+    database: isDbConnected ? 'connected' : 'in_memory_fallback',
     timestamp: new Date().toISOString()
   });
 });

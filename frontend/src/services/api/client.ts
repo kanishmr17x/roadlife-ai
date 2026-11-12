@@ -4,6 +4,7 @@ import { ENV } from '../../config/env';
 export interface HealthResponse {
   status: 'ok' | 'degraded' | 'offline';
   service: string;
+  database?: string;
   timestamp?: string;
   error?: string;
 }
@@ -46,6 +47,7 @@ export async function checkBackendHealth(): Promise<HealthResponse> {
     return {
       status: response.data.status || 'ok',
       service: response.data.service || 'roadsense-backend',
+      database: response.data.database,
       timestamp: response.data.timestamp || new Date().toISOString(),
     };
   } catch (err: unknown) {

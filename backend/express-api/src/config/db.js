@@ -55,4 +55,11 @@ async function connectDB(customUri, options = {}) {
   }
 }
 
-module.exports = { connectDB };
+/**
+ * Return boolean indicator of active MongoDB connection state
+ */
+function isDBConnected() {
+  return mongoose.connection && mongoose.connection.readyState === 1;
+}
+
+module.exports = { connectDB, isDBConnected };

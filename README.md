@@ -45,29 +45,28 @@ ROADLIFE-AI/
 │
 ├── backend/                        # Backend Services
 │   ├── express-api/                # Authoritative Express & MongoDB API (Port 5000)
-│   │   ├── src/config/             # Database connection & events
+│   │   ├── src/config/             # Database connection (MongoDB Atlas / in-memory fallback)
 │   │   ├── src/middleware/         # JWT authentication & requireRole RBAC
 │   │   ├── src/models/             # Mongoose User and Damage (GeoJSON 2dsphere) schemas
-│   │   ├── src/routes/             # authRoutes (/login, /register, /me) & resourceRoutes
-│   │   ├── src/services/           # User service with in-memory fallback
-│   │   └── tests/                  # 33 passing automated test suites (node:test)
+│   │   ├── src/routes/             # authRoutes, damageRoutes, materials, health
+│   │   ├── src/services/           # User service & damage service with in-memory fallback
+│   │   └── tests/                  # 44 passing automated test suites (node:test)
 │   │
 │   └── ai-service/                 # FastAPI Computer Vision Microservice (Port 8001)
-│       ├── app/inference/          # YOLOv8 DamageDetector & severity heuristics
-│       ├── app/preprocessing/      # OpenCV binary image decoding
-│       ├── app/schemas/            # Pydantic contracts (BoundingBox, Severity)
-│       └── tests/                  # ML unit & mock inference tests
+│       ├── app/inference/          # YOLOv8 DamageDetector & MaterialAssessor
+│       ├── app/preprocessing/      # OpenCV binary image decoding & CV edge tracing
+│       ├── app/schemas/            # Pydantic v2 contracts (Damage, Material, BoundingBox)
+│       └── tests/                  # 18 passing PyTest automated tests
 │
 ├── ml/                             # Machine Learning Research & Training
-│   ├── datasets/                   # YOLO dataset manifests
-│   ├── training/                   # Ultralytics training pipeline CLI
+│   ├── datasets/                   # Road damage and material dataset manifests
+│   ├── training/                   # Ultralytics YOLOv8 & PyTorch CNN training pipelines
 │   └── notebooks/                  # Exploratory notebooks
 │
 ├── infrastructure/                 # Containerization & Deployment
 │   ├── docker/                     # Dockerfile.express, Dockerfile.frontend, Dockerfile.ml
 │   └── docker-compose.yml          # Compose orchestration (MongoDB + Express + AI + Web)
 │
-├── legacy-scaffold/                # Archived early PostgreSQL/FastAPI prototype
 ├── docs/                           # Comprehensive technical documentation
 │   ├── architecture/               # System architecture, audit, and ADRs
 │   ├── api/                        # REST API endpoint documentation

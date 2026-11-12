@@ -51,7 +51,6 @@ export const damageService = {
 
     if (health.status === 'ok') {
       try {
-        // Attempt live endpoint (Stage D Target)
         const response = await apiClient.get<DamageRecord[]>('/damages');
         if (response.status === 200 && Array.isArray(response.data)) {
           return {
@@ -61,12 +60,11 @@ export const damageService = {
           };
         }
       } catch (err: unknown) {
-        // Backend returned 404 or other error - expected in Stage C
         const local = getLocalRecords();
         return {
           data: local,
           isLiveBackend: false,
-          message: 'Express backend active at /api/health; /api/damages pending Stage D. Displaying local demo records.',
+          message: 'Express backend active at /api/health; local demo records active.',
         };
       }
     }
@@ -137,18 +135,20 @@ export const damageService = {
         severity: newRecord.severity,
         location: newRecord.location,
         address: newRecord.address,
+        roadName: newRecord.roadName,
         photoUrl: newRecord.photoUrl,
+        repairEstimate: newRecord.repairEstimate,
       });
 
       if (response.status === 201 || response.status === 200) {
         return {
           data: response.data,
           isLiveBackend: true,
-          message: 'Damage report successfully saved to MongoDB Atlas database!',
+          message: 'Damage report successfully saved to Express & MongoDB backend!',
         };
       }
     } catch (e) {
-      // Stage C limitation: backend endpoint /api/damages not yet present
+      // Backend request fallback to local storage
     }
 
     // Persist to local storage
@@ -159,7 +159,7 @@ export const damageService = {
     return {
       data: newRecord,
       isLiveBackend: false,
-      message: 'Report saved to local session storage (Backend /api/damages CRUD route scheduled for Stage D).',
+      message: 'Report saved to local session storage (Express backend fallback).',
     };
   },
 
@@ -203,6 +203,14 @@ export const damageService = {
       severity: string;
       bbox: { x_min: number; y_min: number; x_max: number; y_max: number };
     }>;
+    smart_repair_plan?: {
+      pci_score: number;
+      urgency: string;
+      estimated_cost_inr: number;
+      material_spec: string;
+      labor_hours: number;
+      method: string;
+    };
     message?: string;
   }> {
     try {
