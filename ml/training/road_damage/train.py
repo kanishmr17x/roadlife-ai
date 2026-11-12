@@ -7,9 +7,14 @@ import sys
 from typing import Any, Dict
 import yaml
 
-# Resolve ml-service base directory
-ML_SERVICE_DIR = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ML_SERVICE_DIR))
+# Resolve directory locations across monorepo structure
+ML_DIR = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = ML_DIR.parent
+AI_SERVICE_DIR = PROJECT_ROOT / "backend" / "ai-service"
+
+# Ensure AI microservice configuration is importable
+if str(AI_SERVICE_DIR) not in sys.path:
+    sys.path.insert(0, str(AI_SERVICE_DIR))
 
 from app.config import get_default_device
 
@@ -57,10 +62,10 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    default_yaml = ML_SERVICE_DIR / "datasets" / "road_damage" / "data.yaml"
-    default_project = ML_SERVICE_DIR / "runs" / "road_damage"
+    default_yaml = ML_DIR / "datasets" / "road_damage" / "data.yaml"
+    default_project = ML_DIR / "runs" / "road_damage"
     default_dest = (
-        ML_SERVICE_DIR / "app" / "models" / "road_damage" / "weights" / "best.pt"
+        AI_SERVICE_DIR / "app" / "models" / "road_damage" / "weights" / "best.pt"
     )
 
     parser.add_argument(
