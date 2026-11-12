@@ -17,10 +17,12 @@ app.get('/api/health', (req, res) => {
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
-// Damage reporting routes (CRUD & Geospatial proximity)
+// Damage reporting & AI inspection routes (CRUD & Geospatial proximity)
 const damageRoutes = require('./routes/damageRoutes');
 app.use('/api/damages', damageRoutes);
 app.use('/api/damage', damageRoutes);
+app.use('/api/materials', damageRoutes);
+app.use('/api/material', damageRoutes);
 
 // Role-protected resource routes
 const resourceRoutes = require('./routes/resourceRoutes');

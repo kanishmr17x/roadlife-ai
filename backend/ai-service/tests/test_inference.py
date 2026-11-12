@@ -308,3 +308,113 @@ def test_api_predict_damage_with_valid_mock_inference():
     finally:
         main_module.detector = original_detector
 
+
+# ============================================================================
+# 5. Smart Repair Planning & Computer Vision Fallback Tests
+# ============================================================================
+
+def test_smart_repair_plan_calculation():
+    """Verify smart repair plan computes PCI, priority, and cost estimate."""
+    from app.inference.damage_inference import generate_smart_repair_plan
+
+    # Empty detections -> pristine pavement
+    plan_clean = generate_smart_repair_plan([], 1000, 1000)
+    assert plan_clean.pavement_condition_index >= 90
+    assert plan_clean.priority_level == "MONITORING"
+    assert plan_clean.estimated_cost_inr == 0
+
+    # Critical pothole detection
+    bbox = BoundingBox(x_min=100, y_min=100, x_max=400, y_max=400, width=300, height=300)
+    det = DamageDetection(
+        class_id=0,
+        class_name="pothole",
+        confidence=0.91,
+        bbox=bbox,
+        severity=DamageSeverity.CRITICAL,
+    )
+    plan_urgent = generate_smart_repair_plan([det], 1000, 1000)
+    assert plan_urgent.priority_level == "IMMEDIATE"
+    assert plan_urgent.pavement_condition_index < 80
+    assert plan_urgent.estimated_cost_inr > 5000
+    assert "Square-cut" in plan_urgent.recommended_action
+
+
+def test_cv_damage_fallback_inference():
+    """Verify detector with allow_fallback=True analyzes pavement image using CV."""
+    detector = DamageDetector(config=MLConfig(model_path=Path("absent.pt")))
+    assert not detector.is_ready()
+
+    # Create synthetic pavement image with simulated dark pothole
+    np.random.seed(42)
+    road = np.full((300, 400, 3), 120, dtype=np.uint8)
+    cv2.ellipse(road, (200, 150), (35, 25), 0, 0, 360, (30, 28, 25), -1)
+
+    result = detector.predict(road, allow_fallback=True)
+    assert result.status == "success"
+    assert result.model_name == "cv_pavement_analyzer"
+    assert result.repair_plan is not None
+    assert result.image_width == 400
+    assert result.image_height == 300
+
+
+# ============================================================================
+# 6. Material Quality Visual Assessment Tests
+# ============================================================================
+
+def test_material_assessor_classification_and_evaluation():
+    """Verify material quality assessor analyzes bitumen and aggregate samples."""
+    from app.inference.material_inference import MaterialAssessor
+    from app.schemas.material import MaterialCategory
+
+    assessor = MaterialAssessor()
+
+    # 1. Dark bitumen sample
+    bitumen_img = np.full((200, 200, 3), 35, dtype=np.uint8)
+    res_bitumen = assessor.assess(bitumen_img, declared_material="BITUMEN_ASPHALT")
+    assert res_bitumen.material_type == MaterialCategory.BITUMEN_ASPHALT
+    assert res_bitumen.overall_quality_score >= 60.0
+    assert len(res_bitumen.metrics) >= 2
+    assert "MoRTH" in res_bitumen.standard_reference
+
+    # 2. Crushed stone aggregate sample with high edge density
+    agg_img = np.random.choice([60, 120, 180, 220], size=(200, 200, 3)).astype(np.uint8)
+    res_agg = assessor.assess(agg_img, declared_material="AGGREGATE")
+    assert res_agg.material_type == MaterialCategory.AGGREGATE
+    assert len(res_agg.metrics) >= 2
+    assert "IRC:38" in res_agg.standard_reference
+
+
+def test_api_material_assessment_endpoint():
+    """Verify /predict/material endpoint returns valid MaterialAssessmentResponse."""
+    from app.main import assess_material
+
+    dummy = np.full((150, 150, 3), 40, dtype=np.uint8)
+    _, encoded = cv2.imencode(".jpg", dummy)
+    img_bytes = encoded.tobytes()
+
+    received = False
+
+    async def mock_receive():
+        nonlocal received
+        if not received:
+            received = True
+            return {"type": "http.request", "body": img_bytes, "more_body": False}
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/predict/material",
+        "query_string": b"material=BITUMEN_ASPHALT",
+        "headers": [
+            (b"content-type", b"image/jpeg"),
+            (b"content-length", str(len(img_bytes)).encode("latin-1")),
+        ],
+    }
+    request = Request(scope, receive=mock_receive)
+
+    res = _run_coro(assess_material(request))
+    assert res.status == "success"
+    assert res.overall_quality_score > 0
+    assert res.standard_reference != ""
+

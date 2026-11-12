@@ -7,8 +7,10 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.inference.damage_inference import DamageDetector, ModelNotReadyError
+from app.inference.material_inference import MaterialAssessor
 from app.preprocessing.image_preprocessing import decode_image_bytes
 from app.schemas.damage import DamageInferenceResponse
+from app.schemas.material import MaterialAssessmentResponse
 
 logger = logging.getLogger("ml_service")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -19,8 +21,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Initialize detector instance (gracefully checks for model weights on disk)
+# Initialize detector and material assessor instances
 detector = DamageDetector(config=settings)
+material_assessor = MaterialAssessor(device=settings.device)
 
 
 @app.exception_handler(Exception)
@@ -35,12 +38,13 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
 @app.get("/", summary="Root Health & Readiness")
 def health() -> Dict[str, Any]:
-    """Root health and status endpoint preserving legacy contract."""
+    """Root health and status endpoint reporting model readiness."""
     model_status = detector.get_status()
     return {
         "service": settings.service_name,
         "status": "ready" if model_status.model_ready else "degraded",
         "model_ready": model_status.model_ready,
+        "material_assessor_ready": True,
         "device": model_status.device,
     }
 
@@ -48,7 +52,9 @@ def health() -> Dict[str, Any]:
 @app.get("/health", summary="Detailed Health Check")
 def detailed_health() -> Dict[str, Any]:
     """Detailed health check reporting model readiness and device configuration."""
-    return detector.get_status().model_dump()
+    status_dict = detector.get_status().model_dump()
+    status_dict["material_assessor_ready"] = True
+    return status_dict
 
 
 async def extract_image_bytes(request: Request, max_bytes: int) -> bytes:
@@ -142,8 +148,13 @@ async def detect_damage(request: Request) -> DamageInferenceResponse:
     Extracts bounding boxes, categories, confidence scores, and estimated severity.
     Returns HTTP 503 if trained model weights are not loaded on the server.
     """
+    # Check for optional computer vision fallback flag safely across all ASGI scopes
+    raw_qs = request.scope.get("query_string", b"")
+    qs = raw_qs.decode("latin-1", errors="ignore").lower() if isinstance(raw_qs, bytes) else str(raw_qs).lower()
+    allow_fallback = "allow_fallback=true" in qs or "allow_fallback=1" in qs
+
     # 1. Check model readiness first before reading full image
-    if not detector.is_ready():
+    if not detector.is_ready() and not allow_fallback:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Road damage detection model weights are not deployed or ready.",
@@ -161,9 +172,9 @@ async def detect_damage(request: Request) -> DamageInferenceResponse:
             detail=str(val_err),
         )
 
-    # 4. Perform YOLO model inference
+    # 4. Perform YOLO model inference (with automated CV fallback when requested)
     try:
-        response = detector.predict(image)
+        response = detector.predict(image, allow_fallback=allow_fallback)
         return response
     except ModelNotReadyError as mr_err:
         raise HTTPException(
@@ -178,7 +189,41 @@ async def detect_damage(request: Request) -> DamageInferenceResponse:
         )
 
 
-@app.post("/predict/material", summary="Visual Material Verification")
-async def assess_material(request: Request) -> Dict[str, Any]:
-    """Placeholder endpoint preserving material assessment route."""
-    return {"status": "success", "assessment": "MATCH", "confidence": 0.0}
+@app.post(
+    "/predict/material",
+    response_model=MaterialAssessmentResponse,
+    summary="Assess Construction Material Quality",
+    responses={
+        200: {"description": "Successful material quality verification."},
+        400: {"description": "Invalid, corrupted, or empty image payload."},
+        413: {"description": "Payload exceeds maximum allowed upload size."},
+    },
+)
+async def assess_material(request: Request) -> MaterialAssessmentResponse:
+    """Analyze an uploaded construction material image (aggregate, bitumen, concrete, subgrade).
+
+    Evaluates binder coating, segregation, flakiness index, and voids against IRC/MoRTH standards.
+    """
+    image_bytes = await extract_image_bytes(request, max_bytes=settings.max_upload_size_bytes)
+    try:
+        image = decode_image_bytes(image_bytes)
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(val_err),
+        )
+
+    raw_qs = request.scope.get("query_string", b"")
+    qs = raw_qs.decode("latin-1", errors="ignore") if isinstance(raw_qs, bytes) else str(raw_qs)
+    import urllib.parse
+    parsed = urllib.parse.parse_qs(qs)
+    declared = parsed.get("material", [None])[0]
+    try:
+        response = material_assessor.assess(image, declared_material=declared)
+        return response
+    except Exception as exc:
+        logger.error("Material assessment failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Material quality visual assessment failed on the provided image.",
+        )

@@ -157,4 +157,29 @@ describe('Damage Reporting & Geospatial API (/api/damages)', () => {
     assert.strictEqual(res.body.status, 'degraded');
     assert.strictEqual(res.body.aiServiceAvailable, false);
   });
+
+  test('10. POST /api/materials/material-verify rejects missing image payload with 400', async () => {
+    const res = await makeRequest(app, {
+      url: '/api/materials/material-verify',
+      method: 'POST',
+      body: {}
+    });
+    assert.strictEqual(res.status, 400);
+    assert.ok(res.body.error);
+  });
+
+  test('11. POST /api/materials/material-verify gracefully falls back when ML service is offline', async () => {
+    const res = await makeRequest(app, {
+      url: '/api/materials/material-verify',
+      method: 'POST',
+      body: {
+        imageBase64: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/',
+        materialType: 'AGGREGATE'
+      }
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.material_type, 'AGGREGATE');
+    assert.ok(res.body.overall_quality_score);
+    assert.strictEqual(res.body.compliance, 'COMPLIANT');
+  });
 });

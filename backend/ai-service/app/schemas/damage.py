@@ -54,6 +54,17 @@ class DamageDetection(BaseModel):
     )
 
 
+class SmartRepairPlan(BaseModel):
+    """Automated repair plan and cost engineering estimate."""
+    pavement_condition_index: int = Field(..., ge=0, le=100, description="Pavement Condition Index (PCI) score (0-100)")
+    priority_level: str = Field(..., description="Maintenance urgency: 'IMMEDIATE', 'SCHEDULED', or 'MONITORING'")
+    recommended_action: str = Field(..., description="Actionable road maintenance procedure")
+    recommended_material: str = Field(..., description="Recommended material specification conforming to IRC standards")
+    estimated_cost_inr: int = Field(..., ge=0, description="Estimated total repair expenditure in Indian Rupees (INR)")
+    estimated_labor_hours: float = Field(..., ge=0.0, description="Estimated labor and equipment hours required")
+    estimated_material_quantity_kg: float = Field(..., ge=0.0, description="Estimated material requirement in kilograms")
+
+
 class DamageInferenceResponse(BaseModel):
     """Full inference response returned by the damage prediction endpoint."""
     model_config = {"protected_namespaces": ()}
@@ -66,6 +77,10 @@ class DamageInferenceResponse(BaseModel):
     image_height: int = Field(..., gt=0, description="Input image height in pixels")
     total_detections: int = Field(..., ge=0, description="Number of damage objects detected")
     detections: List[DamageDetection] = Field(default_factory=list, description="Array of detected damage objects")
+    repair_plan: Optional[SmartRepairPlan] = Field(
+        None,
+        description="Automated smart repair and cost estimation recommendation generated from defect inventory."
+    )
 
 
 class ModelStatusResponse(BaseModel):
